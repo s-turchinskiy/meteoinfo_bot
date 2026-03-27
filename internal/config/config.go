@@ -1,0 +1,43 @@
+package config
+
+import (
+	"errors"
+	"net/url"
+	"reflect"
+
+	"github.com/caarlos0/env/v11"
+)
+
+type URLProxy1 struct{}
+
+type URLProxy *url.URL
+
+type Config struct {
+	TelegramBotToken string   `env:"TOKEN"`   // Токен бота телеграмма
+	URLProxy         URLProxy `env:"PROXY"`   // Прокси для работы телеграмма
+	Timeout          int      `env:"TIMEOUT"` // Таймаут проверки сообщений в секундах
+}
+
+var ErrTokenIsEmpty = errors.New("token is empty")
+
+func GetConfig() (*Config, error) {
+	config := &Config{
+		Timeout: 10,
+	}
+
+	err := env.ParseWithOptions(config, env.Options{
+		FuncMap: map[reflect.Type]env.ParserFunc{
+			reflect.TypeOf(new(URLProxy)): func(incomingData string) (any, error) {
+				return url.Parse(incomingData)
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if config.TelegramBotToken == "" {
+		return nil, ErrTokenIsEmpty
+	}
+	return config, nil
+}
