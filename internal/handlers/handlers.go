@@ -1,4 +1,4 @@
-package telegram_updates
+package handlers
 
 import (
 	"context"
@@ -11,24 +11,34 @@ import (
 	"go.uber.org/zap"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/s-turchinskiy/meteoinfo_bot/internal/handlers"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/service"
 )
 
+type WeatherService interface {
+	GetWeather(city string) (result string, err error)
+}
 type BotViaUpdates struct {
 	token   string
 	bot     *tgbotapi.BotAPI
 	updates tgbotapi.UpdatesChannel
-	srvc    handlers.WeatherService
+	srvc    WeatherService
 	log     *zap.SugaredLogger
 }
 
 type OptionBotViaUpdates func(*BotViaUpdates) error
 
-var ErrBotIsNotSpecified = errors.New("bot is not specified")
+var (
+	ErrBotIsNotSpecified = errors.New("bot is not specified")
+	Buttons              = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Москва"),
+			tgbotapi.NewKeyboardButton("Сочи"),
+		),
+	)
+)
 
 func NewBotViaUpdates(
-	srvc handlers.WeatherService,
+	srvc WeatherService,
 	token string,
 	timeout int,
 	log *zap.SugaredLogger,
@@ -123,7 +133,7 @@ func (b BotViaUpdates) getMsg(chatID int64, messageID int, text string) tgbotapi
 	switch text {
 	case "/start":
 		msg := tgbotapi.NewMessage(chatID, "Выберите город из списка ниже")
-		msg.ReplyMarkup = handlers.Buttons
+		msg.ReplyMarkup = Buttons
 		return msg
 	case "close":
 		msg := tgbotapi.NewMessage(chatID, "Для дальнейшего использования напишите /start")
@@ -145,7 +155,7 @@ func (b BotViaUpdates) getMsg(chatID int64, messageID int, text string) tgbotapi
 				)
 
 				msg.Text = "Для этого города не могу предоставить информацию, выберите город из списка ниже"
-				msg.ReplyMarkup = handlers.Buttons
+				msg.ReplyMarkup = Buttons
 				return msg
 			}
 

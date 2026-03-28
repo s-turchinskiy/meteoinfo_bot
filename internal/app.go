@@ -6,8 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/s-turchinskiy/meteoinfo_bot/internal/handlers"
+
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/config"
-	"github.com/s-turchinskiy/meteoinfo_bot/internal/handlers/telegram_updates"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/service"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/utils/closerutil"
 	"go.uber.org/zap"
@@ -23,11 +24,11 @@ type HandleProvider interface {
 }
 
 func NewApp(cfg *config.Config, log *zap.SugaredLogger, receiver service.DataReceiver) (*App, error) {
-	var options []telegram_updates.OptionBotViaUpdates
+	var options []handlers.OptionBotViaUpdates
 	if cfg.URLProxy != nil {
-		options = append(options, telegram_updates.WithProxy(cfg.URLProxy))
+		options = append(options, handlers.WithProxy(cfg.URLProxy))
 	} else {
-		options = append(options, telegram_updates.WithoutProxy())
+		options = append(options, handlers.WithoutProxy())
 	}
 
 	srvc, err := service.NewService(receiver, cfg.CitiesPath)
@@ -35,7 +36,7 @@ func NewApp(cfg *config.Config, log *zap.SugaredLogger, receiver service.DataRec
 		log.Fatalw("Error init service", "error", err.Error())
 	}
 
-	bot, err := telegram_updates.NewBotViaUpdates(srvc, cfg.TelegramBotToken, cfg.Timeout, log, options...)
+	bot, err := handlers.NewBotViaUpdates(srvc, cfg.TelegramBotToken, cfg.Timeout, log, options...)
 	if err != nil {
 		log.Fatalw(
 			fmt.Errorf("connect to telegram wrong, error: %w", err).Error(),
