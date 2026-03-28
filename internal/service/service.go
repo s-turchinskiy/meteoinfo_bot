@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"golang.org/x/net/html"
 	"gopkg.in/yaml.v3"
 )
@@ -18,7 +16,7 @@ var (
 	ErrNoCity          = errors.New("this city is not supported")
 	errRowsTr1More8    = errors.New("rows count in tr1 > 8")
 	errRowsTr3More8    = errors.New("rows count in tr3 > 8")
-	errTableNotFinding = errors.New("table not finding")
+	errTableNotFinding = errors.New("table not found")
 	errTBodyNil        = errors.New("tbody nil")
 	errTr1Nil          = errors.New("tr1 nil")
 	errTr2Nil          = errors.New("tr2 nil")
@@ -42,14 +40,13 @@ type DataReceiver interface {
 type Service struct {
 	cities map[string]string
 	client DataReceiver
-	log    *zap.SugaredLogger
 }
 type item struct {
 	day string
 	val string
 }
 
-func NewService(log *zap.SugaredLogger, receiver DataReceiver, citiesPath string) (*Service, error) {
+func NewService(receiver DataReceiver, citiesPath string) (*Service, error) {
 	cities, err := readYaml(citiesPath)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshal yaml with cities, error: %w", err)
@@ -58,7 +55,6 @@ func NewService(log *zap.SugaredLogger, receiver DataReceiver, citiesPath string
 	srvc := &Service{
 		cities: cities,
 		client: receiver,
-		log:    log,
 	}
 
 	return srvc, nil
@@ -81,44 +77,21 @@ func (s *Service) GetWeather(city string) (result string, err error) {
 func (s *Service) getDataFromSite(url string) (*[7]item, error) {
 	body, err := s.client.Receive(url)
 	if err != nil {
-		s.log.Warnw(
-			"error get data from site",
-			"url", url,
-			"error", err.Error(),
-		)
-
-		return nil, err
+		return nil, fmt.Errorf("error get data from site %w", err)
 	}
 
 	doc, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
-		s.log.Warnw(
-			"error parse data from site",
-			"url", url,
-			"error", err.Error(),
-		)
-
-		return nil, err
+		return nil, fmt.Errorf("error parse data from site %w", err)
 	}
 
 	table := findTable(doc)
 	if table == nil {
-		s.log.Warnw(
-			"error finding table",
-			"url", url,
-		)
-
 		return nil, errTableNotFinding
 	}
 	data, err := dataFromTbody(table)
 	if err != nil {
-		s.log.Warnw(
-			"error parse table",
-			"url", url,
-			"error", err.Error(),
-		)
-
-		return nil, err
+		return nil, fmt.Errorf("error parse table %w", err)
 	}
 
 	return data, nil

@@ -30,7 +30,7 @@ func NewApp(cfg *config.Config, log *zap.SugaredLogger, receiver service.DataRec
 		options = append(options, telegram_updates.WithoutProxy())
 	}
 
-	srvc, err := service.NewService(log, receiver, cfg.CitiesPath)
+	srvc, err := service.NewService(receiver, cfg.CitiesPath)
 	if err != nil {
 		log.Fatalw("Error init service", "error", err.Error())
 	}
