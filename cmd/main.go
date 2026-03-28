@@ -7,6 +7,8 @@ import (
 	"syscall"
 	"time"
 
+	restyreceiver "github.com/s-turchinskiy/meteoinfo_bot/internal/resty_receiver"
+
 	"github.com/joho/godotenv"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal"
 
@@ -32,7 +34,11 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	app, err := internal.NewApp(cfg, loggingSystem)
+	app, err := internal.NewApp(
+		cfg,
+		loggingSystem,
+		restyreceiver.NewRestyReceiver(),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

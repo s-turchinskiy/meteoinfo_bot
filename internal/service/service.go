@@ -10,7 +10,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/go-resty/resty/v2"
 	"golang.org/x/net/html"
 	"gopkg.in/yaml.v3"
 )
@@ -41,9 +40,12 @@ var (
 	spacesRunes = []rune("                    ")
 )
 
+type DataReceiver interface {
+	Receive(url string) (data []byte, err error)
+}
 type Service struct {
 	cities map[string]string
-	client *resty.Client
+	client DataReceiver
 	log    *zap.SugaredLogger
 }
 type item struct {
@@ -51,7 +53,7 @@ type item struct {
 	val string
 }
 
-func NewService(log *zap.SugaredLogger) (*Service, error) {
+func NewService(log *zap.SugaredLogger, receiver DataReceiver) (*Service, error) {
 	res, _ := os.Getwd()
 	cities, err := readYaml(res + filenameCities)
 	if err != nil {
@@ -60,7 +62,7 @@ func NewService(log *zap.SugaredLogger) (*Service, error) {
 
 	srvc := &Service{
 		cities: cities,
-		client: resty.New(),
+		client: receiver,
 		log:    log,
 	}
 
@@ -82,7 +84,7 @@ func (s *Service) GetWeather(city string) (result string, err error) {
 }
 
 func (s *Service) getDataFromSite(url string) (*[7]item, error) {
-	resp, err := s.client.R().Get(url)
+	body, err := s.client.Receive(url)
 	if err != nil {
 		s.log.Warnw(
 			"error get data from site",
@@ -93,7 +95,7 @@ func (s *Service) getDataFromSite(url string) (*[7]item, error) {
 		return nil, err
 	}
 
-	doc, err := html.Parse(bytes.NewReader(resp.Body()))
+	doc, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
 		s.log.Warnw(
 			"error parse data from site",

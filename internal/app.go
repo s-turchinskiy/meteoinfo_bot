@@ -22,7 +22,7 @@ type HandleProvider interface {
 	Close(ctx context.Context) error
 }
 
-func NewApp(cfg *config.Config, log *zap.SugaredLogger) (*App, error) {
+func NewApp(cfg *config.Config, log *zap.SugaredLogger, receiver service.DataReceiver) (*App, error) {
 	var options []telegram_updates.OptionBotViaUpdates
 	if cfg.URLProxy != nil {
 		options = append(options, telegram_updates.WithProxy(cfg.URLProxy))
@@ -30,7 +30,7 @@ func NewApp(cfg *config.Config, log *zap.SugaredLogger) (*App, error) {
 		options = append(options, telegram_updates.WithoutProxy())
 	}
 
-	srvc, err := service.NewService(log)
+	srvc, err := service.NewService(log, receiver)
 	if err != nil {
 		log.Fatalw("Error init service", "error", err.Error())
 	}
