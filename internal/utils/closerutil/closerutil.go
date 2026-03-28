@@ -4,12 +4,9 @@ package closerutil
 import (
 	"context"
 	"fmt"
-	logutil "log"
 	"strings"
 	"sync"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/utils/reflectutil"
 )
@@ -20,10 +17,14 @@ type Closer struct {
 	mu      sync.Mutex
 	funcs   []FuncClose
 	timeout time.Duration
-	log     *zap.SugaredLogger
+	log     Logger
 }
 
-func New(timeout time.Duration, log *zap.SugaredLogger) *Closer {
+type Logger interface {
+	Info(args ...any)
+}
+
+func New(timeout time.Duration, log Logger) *Closer {
 	return &Closer{
 		timeout: timeout,
 		log:     log,
@@ -77,7 +78,7 @@ func (c *Closer) close(ctx context.Context) (err error) {
 }
 
 func (c *Closer) Shutdown() error {
-	logutil.Println("shutting down server gracefully")
+	c.log.Info("shutting down server gracefully")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
@@ -88,7 +89,7 @@ func (c *Closer) Shutdown() error {
 	}
 
 	time.Sleep(100 * time.Millisecond)
-	logutil.Println("server was shutdown successfully")
+	c.log.Info("server was shutdown successfully")
 
 	return nil
 }
