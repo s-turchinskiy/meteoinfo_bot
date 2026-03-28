@@ -59,8 +59,8 @@ func (a *App) Run(ctx context.Context) {
 	}()
 }
 
-func (a *App) Stop(timeout time.Duration) error {
-	closer := closerutil.New(timeout)
+func (a *App) Stop(timeout time.Duration, log *zap.SugaredLogger) error {
+	closer := closerutil.New(timeout, log)
 	closer.Add(a.waitCloseGoroutines)
 	closer.Add(a.bot.Close)
 	err := closer.Shutdown()

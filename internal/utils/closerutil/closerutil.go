@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/utils/reflectutil"
 )
 
@@ -18,10 +20,14 @@ type Closer struct {
 	mu      sync.Mutex
 	funcs   []FuncClose
 	timeout time.Duration
+	log     *zap.SugaredLogger
 }
 
-func New(timeout time.Duration) *Closer {
-	return &Closer{timeout: timeout}
+func New(timeout time.Duration, log *zap.SugaredLogger) *Closer {
+	return &Closer{
+		timeout: timeout,
+		log:     log,
+	}
 }
 
 func (c *Closer) Add(f FuncClose) {
@@ -31,7 +37,7 @@ func (c *Closer) Add(f FuncClose) {
 	c.funcs = append(c.funcs, f)
 }
 
-func (c *Closer) close(ctx context.Context) (log []string, err error) {
+func (c *Closer) close(ctx context.Context) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -42,8 +48,10 @@ func (c *Closer) close(ctx context.Context) (log []string, err error) {
 
 	go func() {
 		for _, f := range c.funcs {
-			log = append(log, "stopping "+reflectutil.GetFunctionName(f))
+			fname := reflectutil.GetFunctionName(f)
+			c.log.Info("stopping " + fname)
 			err = f(ctx)
+			c.log.Info("stopped " + fname)
 			if err != nil {
 				msgs = append(msgs, fmt.Sprintf("[!] %v", err))
 			}
@@ -55,17 +63,17 @@ func (c *Closer) close(ctx context.Context) (log []string, err error) {
 	select {
 	case <-complete:
 	case <-ctx.Done():
-		return log, fmt.Errorf("shutdown cancelled: %v", ctx.Err())
+		return fmt.Errorf("shutdown cancelled: %v", ctx.Err())
 	}
 
 	if len(msgs) > 0 {
-		return log, fmt.Errorf(
+		return fmt.Errorf(
 			"shutdown finished with error(s): \n%s",
 			strings.Join(msgs, "\n"),
 		)
 	}
 
-	return log, nil
+	return nil
 }
 
 func (c *Closer) Shutdown() error {
@@ -74,7 +82,7 @@ func (c *Closer) Shutdown() error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
-	_, err := c.close(shutdownCtx)
+	err := c.close(shutdownCtx)
 	if err != nil {
 		return fmt.Errorf("closerutil: %v", err)
 	}

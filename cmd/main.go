@@ -47,7 +47,7 @@ func main() {
 
 	<-ctx.Done()
 
-	err = app.Stop(20 * time.Second)
+	err = app.Stop(20*time.Second, loggingSystem)
 	stop()
 
 	if err != nil {
