@@ -66,7 +66,7 @@ func NewService(log *zap.SugaredLogger) (*Service, error) {
 	return srvc, nil
 }
 
-func (s Service) GetWeather(city string) (result string, err error) {
+func (s *Service) GetWeather(city string) (result string, err error) {
 	url, ok := s.cities[city]
 	if !ok {
 		return "", ErrNoCity
@@ -80,7 +80,7 @@ func (s Service) GetWeather(city string) (result string, err error) {
 	return displayData(data), nil
 }
 
-func (s Service) getDataFromSite(url string) (*[7]item, error) {
+func (s *Service) getDataFromSite(url string) (*[7]item, error) {
 	resp, err := s.client.R().Get(url)
 	if err != nil {
 		s.log.Warnw(
