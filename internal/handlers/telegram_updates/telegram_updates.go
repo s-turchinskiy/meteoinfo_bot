@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/handlers"
-	"github.com/s-turchinskiy/meteoinfo_bot/internal/logger"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/service"
 )
 
@@ -19,6 +19,7 @@ type BotViaUpdates struct {
 	bot     *tgbotapi.BotAPI
 	updates tgbotapi.UpdatesChannel
 	srvc    service.Servicer
+	log     *zap.SugaredLogger
 }
 
 type OptionBotViaUpdates func(*BotViaUpdates) error
@@ -29,11 +30,13 @@ func NewBotViaUpdates(
 	srvc service.Servicer,
 	token string,
 	timeout int,
+	log *zap.SugaredLogger,
 	opts ...OptionBotViaUpdates,
 ) (handlers.Handlerer, error) {
 	b := &BotViaUpdates{
 		srvc:  srvc,
 		token: token,
+		log:   log,
 	}
 
 	var err error
@@ -48,7 +51,7 @@ func NewBotViaUpdates(
 		return nil, ErrBotIsNotSpecified
 	}
 
-	logger.Log.Infof("Authorized on account %s", b.bot.Self.UserName)
+	log.Infof("Authorized on account %s", b.bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = timeout
@@ -99,14 +102,14 @@ func (b BotViaUpdates) Do(ctx context.Context) {
 
 func (b BotViaUpdates) processMessage(update tgbotapi.Update) {
 	if update.Message != nil {
-		logger.Log.Debugf("incoming message %v", update.Message)
+		b.log.Debugf("incoming message %v", update.Message)
 
 		msg := b.getMsg(update.Message.Chat.ID, update.Message.MessageID, update.Message.Text)
 
-		logger.Log.Debugf("sending message %v", update.Message)
+		b.log.Debugf("sending message %v", update.Message)
 		_, err := b.bot.Send(msg)
 		if err != nil {
-			logger.Log.Errorw("error sending message",
+			b.log.Errorw("error sending message",
 				"error", err.Error(),
 				"incoming_msg", update.Message,
 				"send_msg", msg,
@@ -133,7 +136,7 @@ func (b BotViaUpdates) getMsg(chatID int64, messageID int, text string) tgbotapi
 		result, err := b.srvc.GetWeather(text)
 		if err != nil {
 			if errors.Is(err, service.ErrNoCity) {
-				logger.Log.Infow(
+				b.log.Infow(
 					"error get data for city",
 					"city", text,
 					"chatID", chatID,
@@ -145,7 +148,7 @@ func (b BotViaUpdates) getMsg(chatID int64, messageID int, text string) tgbotapi
 				return msg
 			}
 
-			logger.Log.Warnw(
+			b.log.Warnw(
 				"error get data for city",
 				"city", text,
 				"chatID", chatID,

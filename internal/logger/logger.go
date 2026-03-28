@@ -10,22 +10,19 @@ import (
 )
 
 var (
-	Log                    = zap.NewNop().Sugar()
-	ErrCannotInitializeZap = errors.New("cannot initialize zap")
+	errCannotInitializeZap = errors.New("cannot initialize zap")
 )
 
-func Initialize() error {
+func Initialize(paths []string) (*zap.SugaredLogger, error) {
 	cfg := zap.NewProductionConfig()
-	cfg.OutputPaths = []string{"bot.log", "stdout"}
+	cfg.OutputPaths = paths
 	cfg.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.DateTime)
 	cfg.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
 
 	logger, err := cfg.Build()
 	if err != nil {
-		return ErrCannotInitializeZap
+		return nil, errCannotInitializeZap
 	}
 
-	Log = logger.Sugar()
-
-	return nil
+	return logger.Sugar(), nil
 }

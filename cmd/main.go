@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	systemlog "log"
 	"os/signal"
 	"sync"
 	"syscall"
@@ -19,22 +19,21 @@ import (
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/utils/closerutil"
 )
 
-func init() {
-	err := logger.Initialize()
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func main() {
+
 	err := godotenv.Load("./cmd/.env")
 	if err != nil {
-		logger.Log.Fatalw("Error loading .env file", "error", err.Error())
+		systemlog.Fatal("Error loading .env file", "error", err.Error())
 	}
 
 	cfg, err := config.GetConfig()
 	if err != nil {
-		logger.Log.Fatalw("Error get config", "error", err.Error())
+		systemlog.Fatal("Error get config", "error", err.Error())
+	}
+
+	log, err := logger.Initialize(cfg.OutputPathsLog)
+	if err != nil {
+		systemlog.Fatal(err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -49,20 +48,20 @@ func main() {
 		options = append(options, telegram_updates.WithoutProxy())
 	}
 
-	srvc, err := service.NewService()
+	srvc, err := service.NewService(log)
 	if err != nil {
-		logger.Log.Fatalw("Error init service", "error", err.Error())
+		log.Fatalw("Error init service", "error", err.Error())
 	}
 
-	bot, err = telegram_updates.NewBotViaUpdates(srvc, cfg.TelegramBotToken, cfg.Timeout, options...)
+	bot, err = telegram_updates.NewBotViaUpdates(srvc, cfg.TelegramBotToken, cfg.Timeout, log, options...)
 	if err != nil {
-		logger.Log.Fatalw(
+		log.Fatalw(
 			fmt.Errorf("connect to telegram wrong, error: %w", err).Error(),
 			"proxy", cfg.URLProxy.Scheme+"://"+cfg.URLProxy.Host)
 		return
 	}
 
-	logger.Log.Info("connect to telegram successful")
+	log.Info("connect to telegram successful")
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/s-turchinskiy/meteoinfo_bot/internal/logger"
 	"golang.org/x/net/html"
 	"gopkg.in/yaml.v3"
 )
@@ -43,13 +43,14 @@ var (
 type Service struct {
 	cities map[string]string
 	client *resty.Client
+	log    *zap.SugaredLogger
 }
 type item struct {
 	day string
 	val string
 }
 
-func NewService() (*Service, error) {
+func NewService(log *zap.SugaredLogger) (*Service, error) {
 	res, _ := os.Getwd()
 	cities, err := readYaml(res + filenameCities)
 	if err != nil {
@@ -59,6 +60,7 @@ func NewService() (*Service, error) {
 	srvc := &Service{
 		cities: cities,
 		client: resty.New(),
+		log:    log,
 	}
 
 	return srvc, nil
@@ -81,7 +83,7 @@ func (s Service) GetWeather(city string) (result string, err error) {
 func (s Service) getDataFromSite(url string) (*[7]item, error) {
 	resp, err := s.client.R().Get(url)
 	if err != nil {
-		logger.Log.Warnw(
+		s.log.Warnw(
 			"error get data from site",
 			"url", url,
 			"error", err.Error(),
@@ -92,7 +94,7 @@ func (s Service) getDataFromSite(url string) (*[7]item, error) {
 
 	doc, err := html.Parse(bytes.NewReader(resp.Body()))
 	if err != nil {
-		logger.Log.Warnw(
+		s.log.Warnw(
 			"error parse data from site",
 			"url", url,
 			"error", err.Error(),
@@ -103,7 +105,7 @@ func (s Service) getDataFromSite(url string) (*[7]item, error) {
 
 	table := findTable(doc)
 	if table == nil {
-		logger.Log.Warnw(
+		s.log.Warnw(
 			"error finding table",
 			"url", url,
 		)
@@ -112,7 +114,7 @@ func (s Service) getDataFromSite(url string) (*[7]item, error) {
 	}
 	data, err := dataFromTbody(table)
 	if err != nil {
-		logger.Log.Warnw(
+		s.log.Warnw(
 			"error parse table",
 			"url", url,
 			"error", err.Error(),
