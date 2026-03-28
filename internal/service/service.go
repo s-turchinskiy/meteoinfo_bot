@@ -37,7 +37,7 @@ var (
 type DataReceiver interface {
 	Receive(url string) (data []byte, err error)
 }
-type Service struct {
+type MeteoinforuService struct {
 	cities map[string]string
 	client DataReceiver
 }
@@ -46,13 +46,13 @@ type item struct {
 	val string
 }
 
-func NewService(receiver DataReceiver, citiesPath string) (*Service, error) {
+func NewService(receiver DataReceiver, citiesPath string) (*MeteoinforuService, error) {
 	cities, err := readYaml(citiesPath)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshal yaml with cities, error: %w", err)
 	}
 
-	srvc := &Service{
+	srvc := &MeteoinforuService{
 		cities: cities,
 		client: receiver,
 	}
@@ -60,7 +60,7 @@ func NewService(receiver DataReceiver, citiesPath string) (*Service, error) {
 	return srvc, nil
 }
 
-func (s *Service) GetWeather(city string) (result string, err error) {
+func (s *MeteoinforuService) GetWeather(city string) (result string, err error) {
 	url, ok := s.cities[city]
 	if !ok {
 		return "", ErrNoCity
@@ -74,7 +74,7 @@ func (s *Service) GetWeather(city string) (result string, err error) {
 	return displayData(data), nil
 }
 
-func (s *Service) getDataFromSite(url string) (*[7]item, error) {
+func (s *MeteoinforuService) getDataFromSite(url string) (*[7]item, error) {
 	body, err := s.client.Receive(url)
 	if err != nil {
 		return nil, fmt.Errorf("error get data from site %w", err)

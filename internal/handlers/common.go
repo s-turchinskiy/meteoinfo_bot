@@ -2,7 +2,7 @@ package handlers
 
 import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-type Servicer interface {
+type WeatherService interface {
 	GetWeather(city string) (result string, err error)
 }
 

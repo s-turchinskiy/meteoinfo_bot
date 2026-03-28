@@ -19,7 +19,7 @@ type BotViaUpdates struct {
 	token   string
 	bot     *tgbotapi.BotAPI
 	updates tgbotapi.UpdatesChannel
-	srvc    handlers.Servicer
+	srvc    handlers.WeatherService
 	log     *zap.SugaredLogger
 }
 
@@ -28,7 +28,7 @@ type OptionBotViaUpdates func(*BotViaUpdates) error
 var ErrBotIsNotSpecified = errors.New("bot is not specified")
 
 func NewBotViaUpdates(
-	srvc handlers.Servicer,
+	srvc handlers.WeatherService,
 	token string,
 	timeout int,
 	log *zap.SugaredLogger,
