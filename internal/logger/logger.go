@@ -9,9 +9,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var (
-	errCannotInitializeZap = errors.New("cannot initialize zap")
-)
+var errCannotInitializeZap = errors.New("cannot initialize zap")
 
 func Initialize(paths []string) (*zap.SugaredLogger, error) {
 	cfg := zap.NewProductionConfig()

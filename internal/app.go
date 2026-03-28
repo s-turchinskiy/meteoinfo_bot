@@ -3,13 +3,14 @@ package internal
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/config"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/handlers/telegram_updates"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/service"
 	"github.com/s-turchinskiy/meteoinfo_bot/internal/utils/closerutil"
 	"go.uber.org/zap"
-	"sync"
-	"time"
 )
 
 type App struct {
@@ -47,7 +48,6 @@ func NewApp(cfg *config.Config, log *zap.SugaredLogger) (*App, error) {
 	return &App{
 		bot: bot,
 	}, nil
-
 }
 
 func (a *App) Run(ctx context.Context) {

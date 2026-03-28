@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"github.com/go-resty/resty/v2"
 	"golang.org/x/net/html"

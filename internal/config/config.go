@@ -11,14 +11,16 @@ import (
 
 type URLProxy1 struct{}
 
-type URLProxy *url.URL
-type OutputPathsLog []string
+type (
+	URLProxy       *url.URL
+	OutputPathsLog []string
+)
 
 type Config struct {
 	TelegramBotToken string         `env:"TOKEN"`            // Токен бота телеграмма
 	URLProxy         URLProxy       `env:"PROXY"`            // Прокси для работы телеграмма
 	Timeout          int            `env:"TIMEOUT"`          // Таймаут проверки сообщений в секундах
-	OutputPathsLog   OutputPathsLog `env:"OUTPUT_PATHS_LOG"` //Куда будет выводиться лог
+	OutputPathsLog   OutputPathsLog `env:"OUTPUT_PATHS_LOG"` // Куда будет выводиться лог
 }
 
 var ErrTokenIsEmpty = errors.New("token is empty")
