@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 
@@ -21,14 +22,18 @@ type Config struct {
 	URLProxy         URLProxy       `env:"PROXY"`            // Прокси для работы телеграмма
 	Timeout          int            `env:"TIMEOUT"`          // Таймаут проверки сообщений в секундах
 	OutputPathsLog   OutputPathsLog `env:"OUTPUT_PATHS_LOG"` // Куда будет выводиться лог
+	CitiesPath       string         `env:"CITIES_PATH"`      // Путь к yml файлу с мапой название города - http-путь
 }
 
 var ErrTokenIsEmpty = errors.New("token is empty")
 
 func GetConfig() (*Config, error) {
+	res, _ := os.Getwd()
+
 	config := &Config{
 		Timeout:        10,
 		OutputPathsLog: []string{"bot.log", "stdout"},
+		CitiesPath:     res + "/internal/service/cities.yaml",
 	}
 
 	err := env.ParseWithOptions(config, env.Options{

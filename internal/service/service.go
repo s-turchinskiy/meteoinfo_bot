@@ -14,10 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	filenameCities = "/internal/service/cities.yaml"
-)
-
 var (
 	ErrNoCity          = errors.New("this city is not supported")
 	errRowsTr1More8    = errors.New("rows count in tr1 > 8")
@@ -53,9 +49,8 @@ type item struct {
 	val string
 }
 
-func NewService(log *zap.SugaredLogger, receiver DataReceiver) (*Service, error) {
-	res, _ := os.Getwd()
-	cities, err := readYaml(res + filenameCities)
+func NewService(log *zap.SugaredLogger, receiver DataReceiver, citiesPath string) (*Service, error) {
+	cities, err := readYaml(citiesPath)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshal yaml with cities, error: %w", err)
 	}
